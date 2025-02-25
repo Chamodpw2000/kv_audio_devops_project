@@ -1,0 +1,61 @@
+name: mern-app
+services:
+  api:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./Backend/.env
+    volumes:
+      - ./Backend:/app
+      - /app/node_modules
+    networks:
+      - mern-app
+    ports:
+      - 3000:3000
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    
+    networks:
+      - mern-app
+    ports:
+      - 5173:5173
+    command: npm run dev -- --host --force
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+
+    depends_on:
+      - api
+
+
+  # caddy:
+  #   image: caddy:2-alpine
+  #   ports:
+  #     - 80:80
+  #     - 443:443
+  #   volumes:
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   networks:
+  #     - mern-app
+  #   depends_on:
+  #     - api
+  #     - frontend
+    
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  mern-app:
+    driver: bridge
+  
+
+

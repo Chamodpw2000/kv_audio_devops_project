@@ -1,0 +1,17 @@
+// import { reverse } from "dns"
+
+// {
+//     local_certs
+
+// }
+
+
+// auth.localhost{
+//     encode qzip
+//     reverse_proxy frontend:5173
+
+// }
+
+// api.auth.localhost{
+//     reverse_proxy api:3000
+// }
