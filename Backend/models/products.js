@@ -42,4 +42,3 @@ const productSchema = new mongoose.Schema({
 const Product = mongoose.model("product",productSchema)
 export default Product;
 
-// Path: Backend/models/users.js
