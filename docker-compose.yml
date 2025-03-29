@@ -1,18 +1,28 @@
-name: mern-app
+name: kv-audio
 services:
+  mongo:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - kv-audio-net
   api:
     build:
       context: ./Backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: ./Backend/.env
+    env_file: ./Backend/.env 
     volumes:
       - ./Backend:/app
       - /app/node_modules
     networks:
-      - mern-app
+      - kv-audio-net
     ports:
       - 3000:3000
+    depends_on:
+      - mongo
   frontend:
     build:
       context: ./frontend
@@ -23,10 +33,10 @@ services:
       - /app/node_modules
     
     networks:
-      - mern-app
+      - kv-audio-net
     ports:
       - 5173:5173
-    command: npm run dev -- --host --force
+    command: npm run dev -- --host 
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
@@ -35,26 +45,14 @@ services:
       - api
 
 
-  # caddy:
-  #   image: caddy:2-alpine
-  #   ports:
-  #     - 80:80
-  #     - 443:443
-  #   volumes:
-  #     - caddy_data:/data
-  #     - caddy_config:/config
-  #   networks:
-  #     - mern-app
-  #   depends_on:
-  #     - api
-  #     - frontend
+
     
 volumes:
-  caddy_data:
-  caddy_config:
+  mongo_data:
+    
 
 networks:
-  mern-app:
+  kv-audio-net:
     driver: bridge
   
 

@@ -1,5 +1,5 @@
 import express from 'express';
-// some change 2
+
 import bodyParser from 'body-parser';
 import mongoose, { Mongoose } from 'mongoose';
 import userRouter from './routes/userRouter.js';
@@ -20,7 +20,7 @@ import inquiryRouter from './routes/inquiryRoute.js';
 
 dotenv.config();
 
-//
+
 
 
 const mongoUrl = process.env.MONGO_URL;
@@ -50,12 +50,16 @@ app.use((req, res, next) => {
     next()
 });
 
-mongoose.connect(mongoUrl)
+    mongoose.connect(mongoUrl)
 const connection = mongoose.connection
 
 connection.once("open", () => {
     console.log("MongoDB Connection Established Successfully");
 })
+    
+
+
+
 
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
@@ -72,7 +76,7 @@ app.use("/api/inquiries",inquiryRouter);
 
 app.get('/', (req, res) => {
 
-    return res.json({ message: "KV audio backend runing well   aa" });
+    return res.json({ message: "KV audio backend runing sooooooo soooooooo sooo much well " });
 
 
 // 
