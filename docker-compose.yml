@@ -1,0 +1,43 @@
+
+name: kv-audio-production
+services:
+  mongo:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - kv-audio-net
+
+  api:
+    build:
+      context: ./Backend
+      target: production
+    restart: unless-stopped
+    env_file: ./Backend/.env 
+    networks:
+      - kv-audio-net
+    ports:
+      - 3000:3000  # API on port 3000
+    depends_on:
+      - mongo
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    restart: unless-stopped
+    networks:
+      - kv-audio-net
+    ports:
+      - 5173:5173  
+    depends_on:
+      - api
+
+volumes:
+  mongo_data:
+
+networks:
+  kv-audio-net:
+    driver: bridge
