@@ -56,7 +56,6 @@ resource "aws_security_group" "app_sg" {
   name        = "kv-audio-security-group"
   description = "Security group for KV Audio application"
   vpc_id      = aws_vpc.main.id
-
   # HTTP
   ingress {
     from_port   = 80
@@ -64,7 +63,6 @@ resource "aws_security_group" "app_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   # HTTPS
   ingress {
     from_port   = 443
@@ -72,7 +70,6 @@ resource "aws_security_group" "app_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   # MongoDB
   ingress {
     from_port   = 27017
@@ -81,7 +78,6 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "MongoDB"
   }
-
   # Node.js Backend
   ingress {
     from_port   = 3000
@@ -90,7 +86,6 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "Node.js Backend"
   }
-
   # React Vite Frontend
   ingress {
     from_port   = 5173
@@ -99,7 +94,6 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "React Vite Frontend"
   }
-
   # SSH
   ingress {
     from_port   = 22
@@ -108,7 +102,6 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "SSH"
   }
-
   # All outbound traffic
   egress {
     from_port   = 0
@@ -116,10 +109,15 @@ resource "aws_security_group" "app_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   tags = {
     Name = "kv-audio-sg"
   }
+}
+
+# SSH Key Pair
+resource "aws_key_pair" "deployer" {
+  key_name   = "kv-audio-deployer-key"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDe8AejGyM8siKt9jwM8DCtxiYzVjfnrZfIQ3ZnJF7mOB0Wyds9HoAtwkNFGu+s26aANscq6s0biRzJnqUDwl3uXg5dGdEYWN7ShKQMheM3mRi6K6g78WV1tdTP+TsdfMxaKmherQlOBrch+m9vX8DifEN/UEZco+LhB1EhMyGsjdWNB8BklDx8AGBN4sDkRTX9c7QQ5cZ2xAAIe2KmQYOPU/V0PCOAPKblTdGyX/3tfLwb8QzLA5/RJWi+9BSHDQd01wkHPtnJcOMNVaWkL9eFcHluUkvq+Xz3+ML7s3slZ3XPVy3DraMuxIAP3LkF8bD2PdKe6ctEF0jEmk1aHa1z system@LAPTOP-59GHARO8"
 }
 
 # EC2 Instance
@@ -134,16 +132,9 @@ resource "aws_instance" "app_server" {
     volume_size = 30 # Increased disk space for Docker images
     volume_type = "gp2"
   }
-
   tags = {
     Name = "kv-audio-app-server"
   }
-}
-
-# SSH Key Pair
-resource "aws_key_pair" "deployer" {
-  key_name   = "kv-audio-deployer-key"
-  public_key = file("${path.module}/deployer-key.pub")
 }
 
 # Output Values
