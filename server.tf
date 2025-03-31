@@ -10,7 +10,7 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
   enable_dns_support   = true
   tags = {
-    Name = "kv-audio-vpc"
+    Name = "kv-audio-vpc2"
   }
 }
 
@@ -21,7 +21,7 @@ resource "aws_subnet" "public" {
   availability_zone       = "us-west-2a"
   map_public_ip_on_launch = true
   tags = {
-    Name = "kv-audio-public-subnet"
+    Name = "kv-audio-public-subnet2"
   }
 }
 
@@ -29,7 +29,7 @@ resource "aws_subnet" "public" {
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
   tags = {
-    Name = "kv-audio-igw"
+    Name = "kv-audio-igw2"
   }
 }
 
@@ -41,7 +41,7 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.igw.id
   }
   tags = {
-    Name = "kv-audio-public-rt"
+    Name = "kv-audio-public-rt2"
   }
 }
 
@@ -53,7 +53,7 @@ resource "aws_route_table_association" "public" {
 
 # Security Group
 resource "aws_security_group" "app_sg" {
-  name        = "kv-audio-security-group"
+  name        = "kv-audio-security-group2"
   description = "Security group for KV Audio application"
   vpc_id      = aws_vpc.main.id
   # HTTP
@@ -110,7 +110,7 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   tags = {
-    Name = "kv-audio-sg"
+    Name = "kv-audio-sg2"
   }
 }
 
@@ -133,7 +133,7 @@ resource "aws_instance" "app_server" {
     volume_type = "gp2"
   }
   tags = {
-    Name = "kv-audio-app-server"
+    Name = "kv-audio-app-server2"
   }
   depends_on = [
     aws_route_table_association.public,
