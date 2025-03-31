@@ -122,12 +122,12 @@ resource "aws_key_pair" "deployer" {
 
 # EC2 Instance
 resource "aws_instance" "app_server" {
-  ami                    = "ami-0c55b159cbfafe1f0" # Amazon Linux 2023 AMI for us-west-2
-  instance_type          = "t2.medium" # Increased to handle Docker containers
-  subnet_id              = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.app_sg.id]
-  key_name               = aws_key_pair.deployer.key_name
-  
+  ami                     = "ami-0c55b159cbfafe1f0" # Amazon Linux 2023 AMI for us-west-2
+  instance_type           = "t2.medium" # Increased to handle Docker containers
+  subnet_id               = aws_subnet.public.id
+  vpc_security_group_ids  = [aws_security_group.app_sg.id]
+  key_name                = aws_key_pair.deployer.key_name
+
   root_block_device {
     volume_size = 30 # Increased disk space for Docker images
     volume_type = "gp2"
@@ -135,6 +135,11 @@ resource "aws_instance" "app_server" {
   tags = {
     Name = "kv-audio-app-server"
   }
+  depends_on = [
+    aws_route_table_association.public,
+    aws_subnet.public,
+    aws_security_group.app_sg
+  ]
 }
 
 # Output Values
