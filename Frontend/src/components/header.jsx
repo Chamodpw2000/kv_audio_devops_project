@@ -11,7 +11,7 @@ const Header = () => {
         <img src="/logo.png" alt="logo" className="w-[100px] h-[100px] object-cover absolute left-5" />
 
         <Link to="/home" className='text-[25px] font-bold  m-1'>Home Home</Link>
-        <Link to="/home/contact" className='text-[25px] font-bold m-1' >Contact</Link>
+        <Link to="/home/contact" className='text-[25px] font-bold m-1' >Contact Meeeeeee</Link>
         <Link to="/home/gallery" className='text-[25px] font-bold m-1' >Gallery</Link>
         <Link to="/home/items" className='text-[25px] font-bold m-1' >Items</Link>
         <Link to="/home/login" className='text-[25px] font-bold m-1' >Login up</Link>
