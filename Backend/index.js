@@ -18,7 +18,7 @@ import jwt from "jsonwebtoken";
 import reviewRouter from './routes/reviewRoute.js';
 import inquiryRouter from './routes/inquiryRoute.js';
 
-dotenv.config();
+
 
 
 

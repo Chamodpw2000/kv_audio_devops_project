@@ -6,7 +6,7 @@ import Testing from './components/testing'
 import LoginPage from './login/login'
 import ItemsCard from './components/itemsCard'
 import AddItem from './components/addItem'
-import RegisterPage from './assets/register/RegisterPage'
+import RegisterPage from './register/RegisterPage'
 
 function App() {
     return (

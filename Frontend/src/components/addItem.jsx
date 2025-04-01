@@ -214,8 +214,11 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import dotenv from '../../.env';
+dotenv.config();
 
 const AddItem = () => {
+  const url = process.env.VITE_API_URL;
   const navigate = useNavigate();
 
   const [productKey, setProductKey] = useState('');
@@ -243,7 +246,7 @@ const AddItem = () => {
       setLoading(true); // Disable button during API call
 
       const result = await axios.post(
-        'http://localhost:3000/api/products/addProduct',
+        `${url}/api/products/addProduct`,
         {
           key: productKey,
           name: productName,

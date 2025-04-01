@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import productCard from '../../components/productCard'
+
 import ProductCard from '../../components/productCard'
+import dotenv from '../../../.env'
+dotenv.config()
 
 const Items = () => {
+
+  const url = process.env.VITE_API_URL
 
 const [state, setState] = useState("loading") // loading, success, error
   const [products,setProducts] = useState([])
 
   useEffect(()=>{
-    if(state==="loading"){axios.get("http://localhost:3000/api/products/getProducts").then((res)=>{
+    if(state==="loading"){axios.get(`${url}/api/products/getProducts`).then((res)=>{
       console.log(res.data)
       setProducts(res.data)
       setState("success")

@@ -28,6 +28,7 @@ services:
       context: ./frontend
       target: production
     restart: unless-stopped
+    env_file: ./Frontend/.env
     networks:
       - kv-audio-net
     ports:

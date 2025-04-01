@@ -214,8 +214,11 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
+import dotenv from '../../../.env';
+dotenv.config();
 
 const UpdateItem = () => {
+  const url = process.env.VITE_API_URL;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -253,7 +256,7 @@ const UpdateItem = () => {
       setLoading(true); // Disable button during API call
 
       const result = await axios.put(
-        'http://localhost:3000/api/products/' + productKey,
+        `${url}/api/products/` + productKey,
         {
           name: productName,
           price: productPrice,

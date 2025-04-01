@@ -2,8 +2,12 @@ import React, { useEffect, useState } from "react";
 import { CiCirclePlus } from "react-icons/ci";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import dotenv from "./../../../.env";
+dotenv.config();
+
 
 const ItemsPageAdmin = () => {
+  const url = process.env.VITE_API_URL
   const [items, setItems] = useState([]);
   const [itemsLoaded, setitemsLoaded] = useState(false);
 
@@ -16,7 +20,7 @@ const navigate = useNavigate();
 
     if (!itemsLoaded) {
       axios
-        .get("http://localhost:3000/api/products/getProducts", {
+        .get(`${url}/api/products/getProducts`, {
           headers: { Authorization: `Bearer ${token}` },
         })
       .then((res) => {
@@ -42,7 +46,7 @@ const navigate = useNavigate();
 
       
 
-      const res = await axios.delete(`http://localhost:3000/api/products/${id}`, {
+      const res = await axios.delete(`${url}/api/products/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setitemsLoaded(!itemsLoaded);
