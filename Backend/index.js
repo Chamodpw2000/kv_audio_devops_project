@@ -23,7 +23,7 @@ dotenv.config();
 
 
 
-const mongoUrl = process.env.MONGO_URL;
+const mongoUrl ="mongodb://mongo:27017/kv-audio";
 
 app.use(bodyParser.json());
 
@@ -38,7 +38,7 @@ app.use((req, res, next) => {
 
     if (token != null) {
         token = token.replace("Bearer ", "");
-        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        jwt.verify(token, "kv-secret-89!", (err, decoded) => {
 
             if (!err) {
                 req.user = decoded;

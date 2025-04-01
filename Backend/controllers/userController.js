@@ -53,7 +53,7 @@ export function userLogin(req, res) {
                         role: user.role,
                         profilePicture: user.profilePicture,
                         phone:user.phone
-                    }, process.env.JWT_SECRET)
+                    },"kv-secret-89!")
                     res.status(200).json({ message: "Login Successful", token: token , user:user});
 
                 } else {
