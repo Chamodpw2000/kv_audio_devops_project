@@ -178,7 +178,8 @@ resource "aws_instance" "kv3_audio_app_server_2025" {
         depends_on:
           - mongo
         environment:
-          - MONGODB_URI=mongodb://mongo:27017/kv-audio
+          - MONGO_URL=mongodb://mongo:27017/kv-audio
+          - JWT_SECRET=kv-secret-89!
       
       mongo:
         image: chamod62/kv-audio-production-mongo:latest
