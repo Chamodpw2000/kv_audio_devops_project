@@ -133,6 +133,7 @@ resource "aws_instance" "kv3_audio_app_server_2025" {
     volume_type = "gp2"
   }
   
+  # Basic user data to install Docker and Docker Compose
   user_data = <<-EOF
     #!/bin/bash
     # Update system packages
@@ -147,9 +148,16 @@ resource "aws_instance" "kv3_audio_app_server_2025" {
     curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
     
-    # Create docker-compose.yml
+    # Create docker-compose-init.sh script that will be run after boot
+    cat > /root/docker-compose-init.sh << 'EOFSCRIPT'
+    #!/bin/bash
+    
+    # Get the instance public IP
+    PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+    
+    # Create docker-compose.yml with the current IP address
     mkdir -p /app
-    cat > /app/docker-compose.yml << 'EOFFILE'
+    cat > /app/docker-compose.yml << EOFFILE
     version: '3'
     services:
       frontend:
@@ -160,7 +168,7 @@ resource "aws_instance" "kv3_audio_app_server_2025" {
         depends_on:
           - api
         environment:
-          - VITE_API_URL=http://${aws_instance.kv3_audio_app_server_2025.public_ip}:3000
+          - VITE_API_URL=http://$PUBLIC_IP:3000
       
       api:
         image: chamod62/kv-audio-production-api:latest
@@ -186,7 +194,18 @@ resource "aws_instance" "kv3_audio_app_server_2025" {
     
     # Run docker-compose
     cd /app
+    docker-compose pull
     docker-compose up -d
+    EOFSCRIPT
+    
+    # Make the script executable
+    chmod +x /root/docker-compose-init.sh
+    
+    # Run the script
+    /root/docker-compose-init.sh
+    
+    # Make the script run on system reboot
+    echo "@reboot root /root/docker-compose-init.sh" > /etc/cron.d/docker-compose-startup
   EOF
 
   tags = {
