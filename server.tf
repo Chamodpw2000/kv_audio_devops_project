@@ -117,14 +117,14 @@ resource "aws_security_group" "kv3_audio_app_sg_2025" {
 # Custom SSH Key Pair (kv3)
 resource "aws_key_pair" "kv3_audio_deployer_key_2025" {
   key_name   = "kv3-audio-deployer-key-2025"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDe8AejGyM8siKt9jwM8DCtxiYzVjfnrZfIQ3ZnJF7mOB0Wyds9HoAtwkNFGu+s26aANscq6s0biRzJnqUDwl3uXg5dGdEYWN7ShKQMheM3mRi6K6g78WV1tdTP+TsdfMxaKmherQlOBrch+m9vX8DifEN/UEZco+LhB1EhMyGsjdWNB8BklDx8AGBN4sDkRTX9c7QQ5cZ2xAAIe2KmQYOPU/V0PCOAPKblTdGyX/3tfLwb8QzLA5/RJWi+9BSHDQd01wkHPtnJcOMNVaWkL9eFcHluUkvq+Xz3+ML7s3slZ3XPVy3DraMuxIAP3LkF8bD2PdKe6ctEF0jEmk1aHa1z system@LAPTOP-59GHARO8"
+  public_key = file("${path.module}/deployer-key.pub")
 }
 
 # Custom EC2 Instance (kv3)
 resource "aws_instance" "kv3_audio_app_server_2025" {
   ami                    = "ami-0f9d441b5d66d5f31"
   instance_type          = "t2.medium"
-  subnet_id                = aws_subnet.kv3_audio_public_subnet_2025.id
+  subnet_id              = aws_subnet.kv3_audio_public_subnet_2025.id
   vpc_security_group_ids = [aws_security_group.kv3_audio_app_sg_2025.id]
   key_name               = aws_key_pair.kv3_audio_deployer_key_2025.key_name
 
@@ -132,6 +132,62 @@ resource "aws_instance" "kv3_audio_app_server_2025" {
     volume_size = 30
     volume_type = "gp2"
   }
+  
+  user_data = <<-EOF
+    #!/bin/bash
+    # Update system packages
+    yum update -y
+    
+    # Install Docker
+    yum install -y docker
+    systemctl start docker
+    systemctl enable docker
+    
+    # Install Docker Compose
+    curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    chmod +x /usr/local/bin/docker-compose
+    
+    # Create docker-compose.yml
+    mkdir -p /app
+    cat > /app/docker-compose.yml << 'EOFFILE'
+    version: '3'
+    services:
+      frontend:
+        image: chamod62/kv-audio-production-frontend:latest
+        ports:
+          - "80:5173"
+        restart: always
+        depends_on:
+          - api
+        environment:
+          - VITE_API_URL=http://${aws_instance.kv3_audio_app_server_2025.public_ip}:3000
+      
+      api:
+        image: chamod62/kv-audio-production-api:latest
+        ports:
+          - "3000:3000"
+        restart: always
+        depends_on:
+          - mongo
+        environment:
+          - MONGODB_URI=mongodb://mongo:27017/kv-audio-db
+      
+      mongo:
+        image: chamod62/kv-audio-production-mongo:latest
+        ports:
+          - "27017:27017"
+        restart: always
+        volumes:
+          - mongodb_data:/data/db
+    
+    volumes:
+      mongodb_data:
+    EOFFILE
+    
+    # Run docker-compose
+    cd /app
+    docker-compose up -d
+  EOF
 
   tags = {
     Name = "kv3-audio-app-server-2025"
@@ -150,12 +206,12 @@ output "kv3_audio_instance_public_ip_2025" {
 }
 
 output "kv3_audio_ssh_connection_2025" {
-  value = "ssh -i kv3-audio-deployer-key-2025.pem ec2-user@${aws_instance.kv3_audio_app_server_2025.public_ip}"
+  value = "ssh -i deployer-key ec2-user@${aws_instance.kv3_audio_app_server_2025.public_ip}"
 }
 
 output "kv3_audio_application_urls_2025" {
   value = {
-    frontend    = "http://${aws_instance.kv3_audio_app_server_2025.public_ip}:5173"
+    frontend    = "http://${aws_instance.kv3_audio_app_server_2025.public_ip}"
     backend_api = "http://${aws_instance.kv3_audio_app_server_2025.public_ip}:3000"
     mongodb     = "mongodb://${aws_instance.kv3_audio_app_server_2025.public_ip}:27017"
   }
