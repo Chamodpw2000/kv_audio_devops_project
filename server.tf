@@ -3,58 +3,58 @@ provider "aws" {
   region = "us-west-2"
 }
 
-# Brand-New VPC Configuration
-resource "aws_vpc" "brandnew_vpc" {
-  cidr_block           = "10.2.0.0/16"
+# Custom VPC Configuration
+resource "aws_vpc" "audio_vpc_2025" {
+  cidr_block           = "10.3.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support   = true
   tags = {
-    Name = "brandnew-audio-vpc"
+    Name = "audio-vpc-2025"
   }
 }
 
-# Brand-New Public Subnet
-resource "aws_subnet" "brandnew_public_subnet" {
-  vpc_id                  = aws_vpc.brandnew_vpc.id
-  cidr_block              = "10.2.1.0/24"
+# Custom Public Subnet
+resource "aws_subnet" "audio_public_subnet_2025" {
+  vpc_id                  = aws_vpc.audio_vpc_2025.id
+  cidr_block              = "10.3.1.0/24"
   availability_zone       = "us-west-2a"
   map_public_ip_on_launch = true
   tags = {
-    Name = "brandnew-audio-public-subnet"
+    Name = "audio-public-subnet-2025"
   }
 }
 
-# Brand-New Internet Gateway
-resource "aws_internet_gateway" "brandnew_igw" {
-  vpc_id = aws_vpc.brandnew_vpc.id
+# Custom Internet Gateway
+resource "aws_internet_gateway" "audio_igw_2025" {
+  vpc_id = aws_vpc.audio_vpc_2025.id
   tags = {
-    Name = "brandnew-audio-igw"
+    Name = "audio-igw-2025"
   }
 }
 
-# Brand-New Route Table
-resource "aws_route_table" "brandnew_public_rt" {
-  vpc_id = aws_vpc.brandnew_vpc.id
+# Custom Route Table
+resource "aws_route_table" "audio_public_rt_2025" {
+  vpc_id = aws_vpc.audio_vpc_2025.id
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.brandnew_igw.id
+    gateway_id = aws_internet_gateway.audio_igw_2025.id
   }
   tags = {
-    Name = "brandnew-audio-public-rt"
+    Name = "audio-public-rt-2025"
   }
 }
 
-# Brand-New Route Table Association
-resource "aws_route_table_association" "brandnew_public_association" {
-  subnet_id      = aws_subnet.brandnew_public_subnet.id
-  route_table_id = aws_route_table.brandnew_public_rt.id
+# Custom Route Table Association
+resource "aws_route_table_association" "audio_public_association_2025" {
+  subnet_id      = aws_subnet.audio_public_subnet_2025.id
+  route_table_id = aws_route_table.audio_public_rt_2025.id
 }
 
-# Brand-New Security Group
-resource "aws_security_group" "brandnew_app_sg" {
-  name        = "brandnew-audio-security-group"
-  description = "Security group for brand-new KV Audio application"
-  vpc_id      = aws_vpc.brandnew_vpc.id
+# Custom Security Group
+resource "aws_security_group" "audio_app_sg_2025" {
+  name        = "audio-security-group-2025"
+  description = "Security group for audio application"
+  vpc_id      = aws_vpc.audio_vpc_2025.id
 
   # HTTP
   ingress {
@@ -110,23 +110,23 @@ resource "aws_security_group" "brandnew_app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   tags = {
-    Name = "brandnew-audio-sg"
+    Name = "audio-sg-2025"
   }
 }
 
-# Brand-New SSH Key Pair
-resource "aws_key_pair" "brandnew_deployer" {
-  key_name   = "brandnew-audio-deployer-key"
+# Custom SSH Key Pair
+resource "aws_key_pair" "audio_deployer_key_2025" {
+  key_name   = "audio-deployer-key-2025"
   public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDe8AejGyM8siKt9jwM8DCtxiYzVjfnrZfIQ3ZnJF7mOB0Wyds9HoAtwkNFGu+s26aANscq6s0biRzJnqUDwl3uXg5dGdEYWN7ShKQMheM3mRi6K6g78WV1tdTP+TsdfMxaKmherQlOBrch+m9vX8DifEN/UEZco+LhB1EhMyGsjdWNB8BklDx8AGBN4sDkRTX9c7QQ5cZ2xAAIe2KmQYOPU/V0PCOAPKblTdGyX/3tfLwb8QzLA5/RJWi+9BSHDQd01wkHPtnJcOMNVaWkL9eFcHluUkvq+Xz3+ML7s3slZ3XPVy3DraMuxIAP3LkF8bD2PdKe6ctEF0jEmk1aHa1z system@LAPTOP-59GHARO8"
 }
 
-# Brand-New EC2 Instance
-resource "aws_instance" "brandnew_app_server" {
+# Custom EC2 Instance
+resource "aws_instance" "audio_app_server_2025" {
   ami                     = "ami-0f9d441b5d66d5f31"
   instance_type           = "t2.medium"
-  subnet_id               = aws_subnet.brandnew_public_subnet.id
-  vpc_security_group_ids  = [aws_security_group.brandnew_app_sg.id]
-  key_name                = aws_key_pair.brandnew_deployer.key_name
+  subnet_id               = aws_subnet.audio_public_subnet_2025.id
+  vpc_security_group_ids  = [aws_security_group.audio_app_sg_2025.id]
+  key_name                = aws_key_pair.audio_deployer_key_2025.key_name
 
   root_block_device {
     volume_size = 30
@@ -134,29 +134,29 @@ resource "aws_instance" "brandnew_app_server" {
   }
 
   tags = {
-    Name = "brandnew-audio-app-server"
+    Name = "audio-app-server-2025"
   }
 
   depends_on = [
-    aws_route_table_association.brandnew_public_association,
-    aws_subnet.brandnew_public_subnet,
-    aws_security_group.brandnew_app_sg
+    aws_route_table_association.audio_public_association_2025,
+    aws_subnet.audio_public_subnet_2025,
+    aws_security_group.audio_app_sg_2025
   ]
 }
 
-# Output Values for Brand-New Infrastructure
-output "brandnew_instance_public_ip" {
-  value = aws_instance.brandnew_app_server.public_ip
+# Output Values for Custom Infrastructure
+output "audio_instance_public_ip_2025" {
+  value = aws_instance.audio_app_server_2025.public_ip
 }
 
-output "brandnew_ssh_connection" {
-  value = "ssh -i brandnew-deployer-key.pem ec2-user@${aws_instance.brandnew_app_server.public_ip}"
+output "audio_ssh_connection_2025" {
+  value = "ssh -i audio-deployer-key-2025.pem ec2-user@${aws_instance.audio_app_server_2025.public_ip}"
 }
 
-output "brandnew_application_urls" {
+output "audio_application_urls_2025" {
   value = {
-    frontend   = "http://${aws_instance.brandnew_app_server.public_ip}:5173"
-    backend_api = "http://${aws_instance.brandnew_app_server.public_ip}:3000"
-    mongodb    = "mongodb://${aws_instance.brandnew_app_server.public_ip}:27017"
+    frontend   = "http://${aws_instance.audio_app_server_2025.public_ip}:5173"
+    backend_api = "http://${aws_instance.audio_app_server_2025.public_ip}:3000"
+    mongodb    = "mongodb://${aws_instance.audio_app_server_2025.public_ip}:27017"
   }
 }
