@@ -3,15 +3,15 @@ import './register.css';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import dotenv from './../../.env';
-dotenv.config();
 
-const url = process.env.VITE_API_URL 
+
+
+
 
 
 
 const RegisterPage = () => {
-    const url = dot
+  
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
@@ -31,7 +31,7 @@ const RegisterPage = () => {
             phone
         });
 
-        axios.post(`${url}/api/users/register`, 
+        axios.post(`${import.meta.env.VITE_API_URL}/api/users/register`, 
             {
                 firstName,
                 lastName,

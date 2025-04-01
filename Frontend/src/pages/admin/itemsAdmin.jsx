@@ -2,19 +2,19 @@ import React, { useEffect, useState } from 'react'
 import ItemsCard from '../../components/itemsCard'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
-import dotenv from '../../../.env';
-dotenv.config();
+
+
 
 
 const Itemsadmin = () => {
-    const url = process.env.VITE_API_URL
+  
     const [items, setItems] = useState([])
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate();
     useEffect(() => {
         const fetchItems = async () => {
             try {
-                const response = await axios.get(`${url}/api/products/getProducts`)
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/products/getProducts`)
                 console.log('Full API Response:', response.data) // Debug log
                 setItems(response.data)
             } catch (error) {
