@@ -14,7 +14,7 @@ const Header = () => {
         <Link to="/home/contact" className='text-[25px] font-bold m-1' >Contact</Link>
         <Link to="/home/gallery" className='text-[25px] font-bold m-1' >Gallery</Link>
         <Link to="/home/items" className='text-[25px] font-bold m-1' >Items</Link>
-        <Link to="/home/login" className='text-[25px] font-bold m-1' >Login</Link>
+        <Link to="/home/login" className='text-[25px] font-bold m-1' >Login up</Link>
         {
           user?.role==="admin" && <Link to="/admin" className='text-[25px] font-bold m-1' >Admin Dashboard</Link>
         }
