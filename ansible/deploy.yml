@@ -1,0 +1,99 @@
+---
+- name: Deploy KV Audio Application
+  hosts: app_servers
+  become: yes
+  vars:
+    build_number: "{{ build_number }}"
+  
+  tasks:
+    - name: Install required packages
+      yum:
+        name:
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2
+        state: present
+
+    - name: Add Docker repository
+      command: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      args:
+        creates: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Install Docker
+      yum:
+        name: docker-ce
+        state: present
+
+    - name: Start Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Install pip
+      yum:
+        name: python3-pip
+        state: present
+
+    - name: Install Docker Compose
+      pip:
+        name: docker-compose
+        state: present
+
+    - name: Create app directory
+      file:
+        path: /opt/kv-audio
+        state: directory
+        mode: '0755'
+
+    - name: Create docker-compose.yml
+      copy:
+        content: |
+          version: '3'
+
+          services:
+            api:
+              image: chamod62/kv-audio-production-api:{{ build_number }}
+              container_name: kv-audio-api
+              ports:
+                - "3000:3000"
+              depends_on:
+                - mongodb
+              environment:
+                - MONGO_URI=mongodb://mongodb:27017/kv-audio
+              restart: always
+
+            frontend:
+              image: chamod62/kv-audio-production-frontend:{{ build_number }}
+              container_name: kv-audio-frontend
+              ports:
+                - "5173:5173"
+              depends_on:
+                - api
+              restart: always
+
+            mongodb:
+              image: chamod62/kv-audio-production-mongo:{{ build_number }}
+              container_name: kv-audio-mongodb
+              ports:
+                - "27017:27017"
+              volumes:
+                - mongodb_data:/data/db
+              restart: always
+
+          volumes:
+            mongodb_data:
+        dest: /opt/kv-audio/docker-compose.yml
+        mode: '0644'
+
+    - name: Login to Docker Hub
+      community.docker.docker_login:
+        username: chamod62
+        password: "{{ docker_hub_password }}"
+      no_log: true
+      when: docker_hub_password is defined
+
+    - name: Deploy with Docker Compose
+      shell: cd /opt/kv-audio && docker-compose up -d
+      args:
+        chdir: /opt/kv-audio
