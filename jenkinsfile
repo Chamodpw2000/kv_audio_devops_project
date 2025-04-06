@@ -1,0 +1,231 @@
+
+pipeline {
+    agent any
+
+    environment {
+        GIT_CONFIG_PARAMETERS = "'safe.directory=*'"
+        EC2_PUBLIC_IP = ""
+        TERRAFORM_VERSION = "1.6.6"
+    }
+
+    stages {
+        stage('Github Checkout') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'chamod-git-test',
+                    url: 'https://github.com/Chamodpw2000/kv_audio_devops_project.git'
+            }
+        }
+
+        stage('Setup Terraform') {
+            steps {
+                script {
+                    bat """
+                        curl -o terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_windows_amd64.zip
+                        powershell -command "Expand-Archive -Path terraform.zip -DestinationPath ."
+                        dir
+                    """
+                }
+            }
+        }
+
+        stage('Generate SSH Key') {
+            steps {
+                script {
+                    def keyExists = fileExists('deployer-key')
+                    if (!keyExists) {
+                        powershell '''
+                            ssh-keygen -t rsa -b 2048 -f deployer-key -N '""'
+                        '''
+                        echo "SSH key pair generated successfully"
+                    } else {
+                        echo "SSH key already exists, skipping generation"
+                    }
+
+                    def publicKey = powershell(script: 'Get-Content deployer-key.pub', returnStdout: true).trim()
+                    writeFile file: 'deployer-key.pub', text: publicKey
+                }
+            }
+        }
+
+        stage('Build with Docker Compose') {
+            steps {
+                bat 'docker compose build || echo "Docker compose build failed"'
+                bat 'docker images'
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([string(credentialsId: 'docker', variable: 'kv')]) {
+                    bat "docker login -u chamod62 -p ${kv} || echo 'Docker login failed'"
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    bat "docker tag kv-audio-production-api:latest chamod62/kv-audio-production-api:%BUILD_NUMBER% || echo Failed tagging API"
+                    bat "docker tag kv-audio-production-frontend:latest chamod62/kv-audio-production-frontend:%BUILD_NUMBER% || echo Failed tagging frontend"
+                    bat "docker tag mongo:latest chamod62/kv-audio-production-mongo:%BUILD_NUMBER% || echo Failed tagging mongo"
+
+                    bat "docker push chamod62/kv-audio-production-api:%BUILD_NUMBER% || echo Failed pushing API"
+                    bat "docker push chamod62/kv-audio-production-frontend:%BUILD_NUMBER% || echo Failed pushing frontend"
+                    bat "docker push chamod62/kv-audio-production-mongo:%BUILD_NUMBER% || echo Failed pushing mongo"
+
+                    bat "docker tag kv-audio-production-api:latest chamod62/kv-audio-production-api:latest"
+                    bat "docker tag kv-audio-production-frontend:latest chamod62/kv-audio-production-frontend:latest"
+                    bat "docker tag mongo:latest chamod62/kv-audio-production-mongo:latest"
+
+                    bat "docker push chamod62/kv-audio-production-api:latest"
+                    bat "docker push chamod62/kv-audio-production-frontend:latest"
+                    bat "docker push chamod62/kv-audio-production-mongo:latest"
+                }
+            }
+        }
+
+        stage('Terraform Infrastructure') {
+            steps {
+                withAWS(credentials: 'aws-credentials', region: 'us-west-2') {
+                    withEnv(["TF_IN_AUTOMATION=true"]) {
+                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                            credentialsId: 'aws-credentials',
+                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                            bat ".\\terraform.exe init"
+
+                            script {
+                                try {
+                                    echo "Debugging: Showing Terraform state..."
+                                    bat ".\\terraform.exe show || echo No existing state to show"
+                                    bat ".\\terraform.exe apply -auto-approve"
+                                } catch (e) {
+                                    echo "Terraform apply failed: ${e.getMessage()}"
+                                    error "Terraform apply failed."
+                                }
+                            }
+
+                            script {
+                                // Using proper PowerShell error handling syntax
+                                def output = powershell(script: '''
+                                    try {
+                                        $output = & ".\\terraform.exe" output -raw kv3_audio_instance_public_ip_2025
+                                        if ($LASTEXITCODE -ne 0) { throw "Terraform output command failed" }
+                                        return $output
+                                    } catch {
+                                        Write-Output "Error: $($_.Exception.Message)"
+                                        return "Error"
+                                    }
+                                ''', returnStdout: true).trim()
+                                
+                                if (output.contains('Error')) {
+                                    echo "Failed to get IP address from Terraform output"
+                                } else {
+                                    EC2_PUBLIC_IP = output
+                                    echo "EC2 Instance IP: ${EC2_PUBLIC_IP}"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Wait for Deployment') {
+            steps {
+                script {
+                    echo "Waiting for application deployment to complete..."
+                    // Increased wait time to ensure Docker images are pulled and containers are started
+                    sleep(time: 180, unit: 'SECONDS')
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    try {
+                        def response = powershell(script: '''
+                            try {
+                                $result = Invoke-RestMethod -Uri "http://${env:EC2_PUBLIC_IP}" -Method Head -TimeoutSec 10 -ErrorAction Stop
+                                return 0
+                            } catch {
+                                Write-Output "Failed to connect: $($_.Exception.Message)"
+                                return 1
+                            }
+                        ''', returnStatus: true)
+                        
+                        if (response == 0) {
+                            echo "Frontend application is accessible at http://${EC2_PUBLIC_IP}"
+                        } else {
+                            echo "Frontend application is not yet accessible. It may need more time to start."
+                        }
+                    } catch (Exception e) {
+                        echo "Could not verify deployment: ${e.message}"
+                        echo "The application may need more time to start or check the EC2 logs."
+                    }
+                }
+            }
+        }
+
+        stage('Display Connection Info') {
+            steps {
+                script {
+                    echo "==============================================="
+                    echo "EC2 Instance Deployed Successfully!"
+                    echo "Public IP: ${EC2_PUBLIC_IP}"
+
+                    powershell '''
+                        icacls deployer-key /reset
+                        icacls deployer-key /inheritance:r
+                        icacls deployer-key /grant:r "SYSTEM:(R)"
+                        icacls deployer-key /grant:r "Administrators:(R)"
+                    '''
+
+                    echo "SSH: ssh -i deployer-key ec2-user@${EC2_PUBLIC_IP}"
+                    echo "==============================================="
+                    echo "Application URLs:"
+                    echo "Frontend: http://${EC2_PUBLIC_IP}"
+                    echo "Backend API: http://${EC2_PUBLIC_IP}:3000"
+                    echo "MongoDB: mongodb://${EC2_PUBLIC_IP}:27017"
+                    echo "==============================================="
+                    echo "Deployment Commands (if needed manually):"
+                    echo "1. SSH into the server"
+                    echo "2. Check status: docker ps"
+                    echo "3. View logs: docker-compose -f /app/docker-compose.yml logs"
+                    echo "4. Restart: docker-compose -f /app/docker-compose.yml restart"
+                    echo "==============================================="
+
+                    archiveArtifacts artifacts: 'deployer-key', fingerprint: true
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            bat 'docker logout'
+        }
+        success {
+            echo 'Infrastructure provisioned and Docker images deployed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed! Check the logs for details.'
+            script {
+                try {
+                    withAWS(credentials: 'aws-credentials', region: 'us-west-2') {
+                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                            credentialsId: 'aws-credentials',
+                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                            bat ".\\terraform.exe destroy -auto-approve || echo Failed to destroy infrastructure"
+                        }
+                    }
+                } catch (Exception e) {
+                    echo "Failed to destroy infrastructure: ${e.message}"
+                }
+            }
+        }
+    }
+}
